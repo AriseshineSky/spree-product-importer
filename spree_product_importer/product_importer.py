@@ -17,6 +17,9 @@ from em_tasks.utils.blacklist_filter import BlacklistFilter
 from spree_product_importer.app_logging import logger
 from spree_product_importer.config import init_db, init_pg_db
 from spree_product_importer.import_report import ImportReport
+from spree_product_importer.perfume_title_filter import (
+    is_perfume_from_product_titles,
+)
 from spree_product_importer.product_source_lookup import ProductSourceLookup
 from spree_product_importer.upload_pipeline import UploadPipeline
 
@@ -237,7 +240,17 @@ def import_products(
                     "[ProductFiltered] ProductID: %s, "
                     "Reason: Blacklisted - Spray, Title: %s",
                     prod.get("source_product_id", ""),
-                    s,
+                    prod.get("title_en") or prod.get("title") or "",
+                )
+                continue
+
+            if is_perfume_from_product_titles(prod):
+                report.perfume_filtered += 1
+                logger.debug(
+                    "[ProductFiltered] ProductID: %s, "
+                    "Reason: Perfume - Title keyword, Title: %s",
+                    prod.get("source_product_id", ""),
+                    prod.get("title_en") or prod.get("title") or "",
                 )
                 continue
 

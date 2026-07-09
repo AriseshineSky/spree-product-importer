@@ -47,6 +47,7 @@ spree-product-importer = "spree_product_importer.product_importer:import_product
 
 [dependency-groups]
 dev = [
+  "coverage>=7.15.0",
   "ruff>=0.8",
 ]
 
