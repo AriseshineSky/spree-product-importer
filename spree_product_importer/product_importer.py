@@ -128,6 +128,16 @@ def category_filter(store_code: str, prod: dict):
         "detected as English."
     ),
 )
+@click.option(
+    "-ap",
+    "--allow_perfume",
+    is_flag=True,
+    default=False,
+    help=(
+        "Allow perfume products to upload "
+        "(default: filter by title keywords)."
+    ),
+)
 @click.argument("products_path")
 def import_products(
     store_code,
@@ -144,6 +154,7 @@ def import_products(
     dont_filter_blacklist=False,
     dont_optimize_title=False,
     dont_require_english_title=False,
+    allow_perfume=False,
 ):
     init_db()
     init_pg_db()
@@ -244,7 +255,7 @@ def import_products(
                 )
                 continue
 
-            if is_perfume_from_product_titles(prod):
+            if not allow_perfume and is_perfume_from_product_titles(prod):
                 report.perfume_filtered += 1
                 logger.debug(
                     "[ProductFiltered] ProductID: %s, "

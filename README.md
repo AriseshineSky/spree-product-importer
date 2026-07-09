@@ -124,5 +124,5 @@ uv run ruff format spree_product_importer
 | `-pl, --min_price` | Minimum price (default 15) |
 | `-ph, --max_price` | Maximum price (default 300) |
 | `-nb, --dont_filter_blacklist` | Skip blacklist filtering |
-| `-nt, --dont_optimize_title` | Skip spray-word title cleanup |
 | `-ne, --dont_require_english_title` | Allow non-English titles |
+| `-ap, --allow_perfume` | Allow perfume uploads (default: filtered) |
