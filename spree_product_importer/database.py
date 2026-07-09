@@ -40,8 +40,8 @@ def get_engine():
         pg_db = config.get("pg_db")
         if not pg_db:
             raise RuntimeError(
-                "PostgreSQL config not found. Add a [pg_db] section to your ini "
-                "file or set PG_DATABASE_URL."
+                "PostgreSQL config not found. Add a [pg_db] section "
+                "to your ini file or set PG_DATABASE_URL."
             )
         _engine = create_engine(
             build_pg_url(pg_db),
@@ -53,7 +53,11 @@ def get_engine():
 def get_session_factory() -> sessionmaker[Session]:
     global _SessionLocal
     if _SessionLocal is None:
-        _SessionLocal = sessionmaker(bind=get_engine(), autoflush=False, autocommit=False)
+        _SessionLocal = sessionmaker(
+            bind=get_engine(),
+            autoflush=False,
+            autocommit=False,
+        )
     return _SessionLocal
 
 

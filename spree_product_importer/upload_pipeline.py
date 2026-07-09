@@ -2,7 +2,10 @@ from collections.abc import Callable
 
 from spree_product_importer.app_logging import logger
 from spree_product_importer.import_report import ImportReport
-from spree_product_importer.product_source_lookup import ProductSourceLookup, product_source_key
+from spree_product_importer.product_source_lookup import (
+    ProductSourceLookup,
+    product_source_key,
+)
 
 
 class UploadPipeline:

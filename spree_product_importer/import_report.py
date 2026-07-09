@@ -14,8 +14,9 @@ class ImportReport:
 
     def log_summary(self) -> None:
         logger.info(
-            "[ProductAudit] InvalidStandardProduct: %s, NonEnglishTitle: %s, "
-            "Blacklisted: %s, AlreadyExists: %s, MissingSourceInfo: %s, ToUpload: %s",
+            "[ProductAudit] InvalidStandardProduct: %s, "
+            "NonEnglishTitle: %s, Blacklisted: %s, AlreadyExists: %s, "
+            "MissingSourceInfo: %s, ToUpload: %s",
             self.invalid_standard_product,
             self.non_english_title,
             self.blacklisted,

@@ -27,7 +27,7 @@ def resolve_config_path() -> str:
         if path.is_file():
             return str(path)
 
-    app_root = Path(__file__).resolve().parents[2]
+    app_root = Path(__file__).resolve().parents[1]
     for file_name in ("config_local.ini", "config.ini", "config.sample.ini"):
         path = app_root / file_name
         if path.is_file():

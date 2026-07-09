@@ -38,8 +38,16 @@ def _product_sources_table() -> Table:
 class ProductSourceLookup:
     CHUNK_SIZE = 500
 
-    def find_existing(self, keys: Iterable[tuple[str, str]]) -> set[tuple[str, str]]:
-        unique_keys = list(dict.fromkeys((source, str(source_product_id)) for source, source_product_id in keys))
+    def find_existing(
+        self,
+        keys: Iterable[tuple[str, str]],
+    ) -> set[tuple[str, str]]:
+        unique_keys = list(
+            dict.fromkeys(
+                (source, str(source_product_id))
+                for source, source_product_id in keys
+            )
+        )
         if not unique_keys:
             return set()
 
@@ -48,9 +56,12 @@ class ProductSourceLookup:
 
         with session_scope() as session:
             for offset in range(0, len(unique_keys), self.CHUNK_SIZE):
-                chunk: Sequence[tuple[str, str]] = unique_keys[offset : offset + self.CHUNK_SIZE]
-                stmt = select(table.c.source, table.c.source_product_id).where(
-                    tuple_(table.c.source, table.c.source_product_id).in_(chunk)
+                end = offset + self.CHUNK_SIZE
+                chunk: Sequence[tuple[str, str]] = unique_keys[offset:end]
+                source_col = table.c.source
+                source_product_id_col = table.c.source_product_id
+                stmt = select(source_col, source_product_id_col).where(
+                    tuple_(source_col, source_product_id_col).in_(chunk)
                 )
                 for row in session.execute(stmt):
                     existing.add((row.source, row.source_product_id))

@@ -1,25 +1,83 @@
-[build-system]
-requires = ["setuptools>=68", "wheel"]
-build-backend = "setuptools.build_meta"
-
 [project]
 name = "spree-product-importer"
 version = "0.1.0"
 description = "Import JSONL products into Spree"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.11,<3.14"
 dependencies = [
   "click",
   "cmutils",
   "em-tasks",
+  "lingua-language-detector>=2.1.1",
   "product-validator",
   "psycopg[binary]",
   "pyahocorasick",
   "sqlalchemy>=2.0",
+  "urllib3<2",
+  # em-tasks runtime deps (from ../em-tasks/requirements.txt; uv ignores setup.py)
+  "bizdays>=1.0.19",
+  "dateparser>=1.4.1",
+  "dropshipping>=0.1.98",
+  "google-ads>=31.1.0",
+  "google-api-python-client>=2.198.0",
+  "google-auth>=2.55.2",
+  "google-cloud-bigquery>=3.42.2",
+  "google-cloud-core>=2.6.0",
+  "gspread==5.7.1",
+  "numpy<2",
+  "oauth2client>=4.1.3",
+  "peewee>=4.1.1",
+  "pint>=0.25.3",
+  "pymysql>=1.2.0",
+  "pyyaml>=6.0.3",
+  "requests>=2.34.2",
+  "shipstation>=0.1.3",
+  "shopify-python-api-patcher>=0.0.2",
+  "shopifyapi>=12.7.0",
+  "shopping-utils>=0.0.8",
+  "tracking-numbers>=0.1.8",
+  "tracking-tracker>=0.0.1",
+  "usps-api>=0.5",
+  # product-validator runtime
+  "checkdigit>=0.5.0",
 ]
 
 [project.scripts]
 spree-product-importer = "spree_product_importer.product_importer:import_products"
 
+[dependency-groups]
+dev = [
+  "ruff>=0.8",
+]
+
+[tool.uv.sources]
+em-tasks = { path = "../em-tasks", editable = true }
+product-validator = { path = "../product-validator", editable = true }
+cmutils = { index = "everymarket" }
+
+[[tool.uv.index]]
+name = "pypi"
+url = "https://pypi.org/simple"
+default = true
+
+[[tool.uv.index]]
+name = "everymarket"
+url = "https://devpi.everymarket.com/vgdev/stable/+simple/"
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [tool.setuptools.packages.find]
-where = ["src"]
+where = ["."]
+
+[tool.ruff]
+line-length = 79
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I"]
+
+[tool.ruff.format]
+quote-style = "double"
+line-ending = "auto"

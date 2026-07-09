@@ -1,7 +1,6 @@
 import logging
 import sys
 
-
 logger = logging.getLogger("spree_product_importer")
 if not logger.handlers:
     logger.setLevel(logging.DEBUG)

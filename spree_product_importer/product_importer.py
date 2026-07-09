@@ -1,13 +1,15 @@
-# -*- coding: utf-8 -*-
-
 import json
 import os
 import re
 
 import click
 from em_product.product import StandardProduct
-from em_tasks.amazon.listing.import_root_category import is_blocked_import_root_category
-from em_tasks.channels.listing.shared.upload_title import upload_title_is_english
+from em_tasks.amazon.listing.import_root_category import (
+    is_blocked_import_root_category,
+)
+from em_tasks.channels.listing.shared.upload_title import (
+    upload_title_is_english,
+)
 from em_tasks.spree.api import SpreeApi
 from em_tasks.store.store_util import StoreUtil
 from em_tasks.utils.blacklist_filter import BlacklistFilter
@@ -21,24 +23,20 @@ from spree_product_importer.upload_pipeline import UploadPipeline
 _SPRAY_WORD_RE = re.compile(r"\bspray\b", re.IGNORECASE)
 
 
-def strip_spray_from_title(title: str) -> str:
-    if not title or "spray" not in title.lower():
-        return title
-    cleaned = _SPRAY_WORD_RE.sub("", title)
-    return re.sub(r"\s+", " ", cleaned).strip()
-
-
-def strip_spray_from_product_titles(prod: dict) -> None:
+def is_spray_from_product_titles(prod: dict) -> bool:
     source = (prod.get("source") or "").lower()
     if source.startswith("amz_"):
-        return
+        return False
+
     for key in ("title", "title_en"):
-        val = prod.get(key)
-        if val:
-            prod[key] = strip_spray_from_title(val)
+        title = prod.get(key)
+        if title and _SPRAY_WORD_RE.search(title):
+            return True
+
+    return False
 
 
-def category_filt(store_code: str, prod: dict):
+def category_filter(store_code: str, prod: dict):
     return is_blocked_import_root_category(
         prod.get("categories"),
         store_code=store_code,
@@ -118,18 +116,14 @@ def category_filt(store_code: str, prod: dict):
     help="Dont filter blacklist products.",
 )
 @click.option(
-    "-nt",
-    "--dont_optimize_title",
-    is_flag=True,
-    default=False,
-    help="Dont optimize title.",
-)
-@click.option(
     "-ne",
     "--dont_require_english_title",
     is_flag=True,
     default=False,
-    help="Allow upload when title/title_en is missing or not detected as English.",
+    help=(
+        "Allow upload when title/title_en is missing or not "
+        "detected as English."
+    ),
 )
 @click.argument("products_path")
 def import_products(
@@ -222,7 +216,7 @@ def import_products(
                     )
                     continue
 
-            if category_filt(store_code, prod):
+            if category_filter(store_code, prod):
                 logger.debug(f"[BlacklistCategory] {prod['categories']}")
                 continue
 
@@ -237,13 +231,21 @@ def import_products(
 
                 continue
 
-            if not dont_optimize_title:
-                strip_spray_from_product_titles(prod)
+            if is_spray_from_product_titles(prod):
+                report.blacklisted += 1
+                logger.debug(
+                    "[ProductFiltered] ProductID: %s, "
+                    "Reason: Blacklisted - Spray, Title: %s",
+                    prod.get("source_product_id", ""),
+                    s,
+                )
+                continue
 
             if require_english_title and not upload_title_is_english(prod):
                 report.non_english_title += 1
                 logger.debug(
-                    "[NonEnglishTitle] ProductID: %s, SourceProductID: %s, Title: %r",
+                    "[NonEnglishTitle] ProductID: %s, "
+                    "SourceProductID: %s, Title: %r",
                     prod.get("product_id", ""),
                     prod.get("source_product_id", ""),
                     (prod.get("title_en") or prod.get("title") or "")[:120],
@@ -254,14 +256,15 @@ def import_products(
                 brand = prod.get("brand", None)
                 title = prod.get("title_en", None) or prod.get("title", "")
                 if brand:
-                    s = "{} -{}".format(brand.lower(), title.lower())
+                    s = "{} {}".format(brand.lower(), title.lower())
                 else:
                     s = title.lower()
                 result = blacklist_filter.is_blacklisted(s)
                 if result:
                     report.blacklisted += 1
                     logger.debug(
-                        "[ProductFiltered] ProductID: %s, Reason: Blacklisted - %s, Title: %s",
+                        "[ProductFiltered] ProductID: %s, "
+                        "Reason: Blacklisted - %s, Title: %s",
                         prod.get("source_product_id", ""),
                         result,
                         s,

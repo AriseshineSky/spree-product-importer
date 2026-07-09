@@ -5,5 +5,6 @@ __pycache__/
 dist/
 build/
 .ruff_cache/
+.python-version.local
 config.ini
 config_local.ini

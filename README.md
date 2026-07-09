@@ -6,10 +6,30 @@ Standalone CLI extracted from `em-celery/tools/spree/product_importer.py`. Reads
 
 ```bash
 cd /home/sky/src/spree-product-importer
-python -m venv .venv
-source .venv/bin/activate
-pip install -e ../em-tasks -e ../product-validator -e .
+uv sync
 cp config.sample.ini config.ini
+```
+
+`em-tasks` and `product-validator` are local editable dependencies
+(`../em-tasks`, `../product-validator`). `cmutils` is resolved from the
+EveryMarket devpi index configured in `pyproject.toml`.
+
+`em-tasks` dependencies from `requirements.txt` are listed explicitly in
+this project because `uv` does not read `setup.py` install_requires.
+
+Install dev tools (ruff):
+
+```bash
+uv sync --group dev
+```
+
+Common commands:
+
+```bash
+uv sync                  # install / update dependencies
+uv lock                  # refresh lockfile after pyproject changes
+uv run spree-product-importer --help
+uv add package-name      # add a dependency
 ```
 
 ## Configuration
@@ -66,7 +86,7 @@ with session_scope() as session:
 ```bash
 spree-product-importer --help
 
-spree-product-importer \
+uv run spree-product-importer \
   -s us \
   -m MERCHANT_ID \
   -v VENDOR_ID \
@@ -78,7 +98,18 @@ spree-product-importer \
 Or run as a module:
 
 ```bash
-python -m spree_product_importer.product_importer -s us -m ... -v ... -sl 1 -sc 1 ./products.jsonl
+uv run python -m spree_product_importer.product_importer \
+  -s us -m ... -v ... -sl 1 -sc 1 ./products.jsonl
+```
+
+## Development
+
+This project follows [PEP 8](https://peps.python.org/pep-0008/) (79-character line length).
+
+```bash
+uv sync --group dev
+uv run ruff check spree_product_importer
+uv run ruff format spree_product_importer
 ```
 
 ## Options
