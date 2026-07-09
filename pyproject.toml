@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "spree-product-importer"
+version = "0.1.0"
+description = "Import JSONL products into Spree"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "click",
+  "cmutils",
+  "em-tasks",
+  "product-validator",
+  "psycopg[binary]",
+  "pyahocorasick",
+  "sqlalchemy>=2.0",
+]
+
+[project.scripts]
+spree-product-importer = "spree_product_importer.product_importer:import_products"
+
+[tool.setuptools.packages.find]
+where = ["src"]
