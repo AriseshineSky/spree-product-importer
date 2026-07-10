@@ -42,7 +42,7 @@ def resolve_config_path() -> str:
 def get_config():
     global _cfg
     if _cfg is None:
-        config = IniConfigLoader(resolve_config_path(), interpolation=False)
+        config = IniConfigLoader(resolve_config_path())
         _cfg = config.load()
     return _cfg
 
