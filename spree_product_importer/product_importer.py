@@ -20,6 +20,9 @@ from spree_product_importer.import_report import ImportReport
 from spree_product_importer.perfume_title_filter import (
     is_perfume_from_product_titles,
 )
+from spree_product_importer.product_format_filter import (
+    product_format_reject_reason,
+)
 from spree_product_importer.product_source_lookup import ProductSourceLookup
 from spree_product_importer.upload_pipeline import UploadPipeline
 
@@ -134,8 +137,7 @@ def category_filter(store_code: str, prod: dict):
     is_flag=True,
     default=False,
     help=(
-        "Allow perfume products to upload "
-        "(default: filter by title keywords)."
+        "Allow perfume products to upload (default: filter by title keywords)."
     ),
 )
 @click.argument("products_path")
@@ -262,6 +264,19 @@ def import_products(
                     "Reason: Perfume - Title keyword, Title: %s",
                     prod.get("source_product_id", ""),
                     prod.get("title_en") or prod.get("title") or "",
+                )
+                continue
+
+            format_reason = product_format_reject_reason(prod)
+            if format_reason:
+                report.format_filtered += 1
+                logger.debug(
+                    "[ProductFiltered] ProductID: %s, "
+                    "Reason: Format - %s, Options: %s, Variants: %s",
+                    prod.get("source_product_id", ""),
+                    format_reason,
+                    len(prod.get("options") or []),
+                    len(prod.get("variants") or []),
                 )
                 continue
 
