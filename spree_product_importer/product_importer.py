@@ -120,6 +120,10 @@ def _process_file(
             if not prod:
                 continue
 
+            # Ebay (and other channel) description cleanup must run before
+            # StandardProduct validation, which rejects residual <a> tags.
+            prepare_product_description(prod)
+
             if "amz" not in str(prod.get("source", "")).lower():
                 try:
                     StandardProduct(**prod)
@@ -225,7 +229,6 @@ def _process_file(
                     continue
 
             prod.pop("categories", None)
-            prepare_product_description(prod)
             if not pipeline.add(prod):
                 logger.info(
                     "[DailyQuotaReached] Stopping file %s",
