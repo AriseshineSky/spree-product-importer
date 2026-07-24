@@ -92,8 +92,9 @@ uv run spree-product-importer -s em-spree
 # One source only
 uv run spree-product-importer -s em-spree -src amz_ca
 
-# Vendor profile (EM-HU v62 AliExpress)
+# Vendor profile (EM-HU v62: AliExpress + InspireUplift)
 uv run spree-product-importer -s em-spree -v 62
+uv run spree-product-importer -s em-spree -v 62 -src inspireuplift
 
 # Ad-hoc file (still uses store/source defaults; CLI flags override)
 uv run spree-product-importer -s em-spree -src amz_uk ./custom.jsonl

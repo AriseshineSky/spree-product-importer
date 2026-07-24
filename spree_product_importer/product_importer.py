@@ -22,6 +22,9 @@ from spree_product_importer.import_settings import (
     ImportSettings,
     load_import_job,
 )
+from spree_product_importer.description_prepare import (
+    prepare_product_description,
+)
 from spree_product_importer.perfume_title_filter import (
     is_perfume_from_product_titles,
 )
@@ -222,6 +225,7 @@ def _process_file(
                     continue
 
             prod.pop("categories", None)
+            prepare_product_description(prod)
             if not pipeline.add(prod):
                 logger.info(
                     "[DailyQuotaReached] Stopping file %s",
