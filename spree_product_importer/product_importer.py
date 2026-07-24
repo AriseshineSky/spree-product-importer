@@ -128,9 +128,10 @@ def _process_file(
                 logger.debug(f"[BlacklistCategory] {prod.get('categories')}")
                 continue
 
-            # Drop categories before StandardProduct — Spree upload does not
-            # use them, and duplicate path segments fail validation.
-            prod.pop("categories", None)
+            # Clear categories before StandardProduct — Spree upload does not
+            # use them, and duplicate path segments fail validation. Keep the
+            # key (required by StandardProduct) but drop the value.
+            prod["categories"] = None
 
             if "amz" not in str(prod.get("source", "")).lower():
                 try:
