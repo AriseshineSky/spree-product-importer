@@ -40,6 +40,9 @@ class ImportSettings:
     quota_timezone: str = "America/Chicago"
     products_path: str | None = None
     source_name: str | None = None
+    # Product ``source`` field prefixes that skip title spray/perfume filters.
+    skip_spray_source_prefixes: tuple[str, ...] = ()
+    skip_perfume_source_prefixes: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -107,6 +110,28 @@ def _merge_dicts(*parts: dict) -> dict:
     return merged
 
 
+def parse_prefix_list(raw) -> tuple[str, ...]:
+    if raw is None or raw == "":
+        return ()
+    if isinstance(raw, (list, tuple)):
+        return tuple(
+            str(item).strip().lower()
+            for item in raw
+            if str(item).strip()
+        )
+    return tuple(p.lower() for p in parse_csv_list(str(raw)))
+
+
+def source_matches_prefixes(
+    source: str | None,
+    prefixes: tuple[str, ...] | list[str],
+) -> bool:
+    text = (source or "").strip().lower()
+    if not text or not prefixes:
+        return False
+    return any(text.startswith(prefix) for prefix in prefixes if prefix)
+
+
 def _settings_from_dict(data: dict, source_name: str | None = None) -> ImportSettings:
     missing = [k for k in REQUIRED_KEYS if k not in data or data[k] in (None, "")]
     if missing:
@@ -121,6 +146,12 @@ def _settings_from_dict(data: dict, source_name: str | None = None) -> ImportSet
     kwargs["source_name"] = source_name
     if "products_path" in data:
         kwargs["products_path"] = str(data["products_path"])
+    kwargs["skip_spray_source_prefixes"] = parse_prefix_list(
+        data.get("skip_spray_source_prefixes")
+    )
+    kwargs["skip_perfume_source_prefixes"] = parse_prefix_list(
+        data.get("skip_perfume_source_prefixes")
+    )
     return ImportSettings(**kwargs)
 
 

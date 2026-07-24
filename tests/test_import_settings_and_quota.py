@@ -5,7 +5,10 @@ from pathlib import Path
 
 from spree_product_importer.daily_upload_quota import DailyUploadQuota
 from spree_product_importer.import_report import ImportReport
-from spree_product_importer.import_settings import load_import_job
+from spree_product_importer.import_settings import (
+    load_import_job,
+    source_matches_prefixes,
+)
 from spree_product_importer.upload_pipeline import UploadPipeline
 
 
@@ -91,6 +94,8 @@ class ImportSettingsTest(unittest.TestCase):
                 "/home/Admin/em-tasks/data/aliexpress/"
                 "quality_to_upload.multi_variant.from_prepare.jsonl"
             ),
+            "skip_spray_source_prefixes": "aliexpress, inspireuplift",
+            "skip_perfume_source_prefixes": "aliexpress,inspireuplift",
         }
         job = load_import_job(
             "em-spree",
@@ -104,6 +109,14 @@ class ImportSettingsTest(unittest.TestCase):
         self.assertEqual(src.vendor_id, "62")
         self.assertEqual(src.stock_location_id, 70)
         self.assertEqual(src.shipping_category_id, 46910)
+        self.assertEqual(
+            src.skip_spray_source_prefixes,
+            ("aliexpress", "inspireuplift"),
+        )
+        self.assertEqual(
+            src.skip_perfume_source_prefixes,
+            ("aliexpress", "inspireuplift"),
+        )
         self.assertTrue(src.products_path.endswith(
             "quality_to_upload.multi_variant.from_prepare.jsonl"
         ))
@@ -186,6 +199,20 @@ class UploadPipelineQuotaTest(unittest.TestCase):
             self.assertEqual(report.uploaded, 3)
             self.assertGreaterEqual(report.quota_skipped, 1)
             self.assertTrue(pipeline.quota_exhausted)
+
+
+class SourcePrefixMatchTest(unittest.TestCase):
+    def test_prefix_match(self):
+        self.assertTrue(
+            source_matches_prefixes("Ebay_US", ("ebay", "aliexpress"))
+        )
+        self.assertTrue(
+            source_matches_prefixes("Inspireuplift", ("inspireuplift",))
+        )
+        self.assertFalse(
+            source_matches_prefixes("AMZ_US", ("ebay", "aliexpress"))
+        )
+        self.assertFalse(source_matches_prefixes("Ebay_US", ()))
 
 
 if __name__ == "__main__":

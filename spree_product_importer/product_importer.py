@@ -21,6 +21,7 @@ from spree_product_importer.import_report import ImportReport
 from spree_product_importer.import_settings import (
     ImportSettings,
     load_import_job,
+    source_matches_prefixes,
 )
 from spree_product_importer.description_prepare import (
     prepare_product_description,
@@ -39,15 +40,6 @@ _SPRAY_WORD_RE = re.compile(r"\bspray\b", re.IGNORECASE)
 
 
 def is_spray_from_product_titles(prod: dict) -> bool:
-    source = (prod.get("source") or "").lower()
-    if (
-        source.startswith("amz_")
-        or source.startswith("ebay")
-        or source.startswith("aliexpress")
-        or source.startswith("inspireuplift")
-    ):
-        return False
-
     for key in ("title", "title_en"):
         title = prod.get(key)
         if title and _SPRAY_WORD_RE.search(title):
@@ -164,7 +156,11 @@ def _process_file(
                     logger.debug("[PriceTooHigh] Price: %s", price)
                 continue
 
-            if is_spray_from_product_titles(prod):
+            skip_spray = source_matches_prefixes(
+                prod.get("source"),
+                settings.skip_spray_source_prefixes,
+            )
+            if not skip_spray and is_spray_from_product_titles(prod):
                 report.blacklisted += 1
                 logger.debug(
                     "[ProductFiltered] ProductID: %s, "
@@ -174,11 +170,9 @@ def _process_file(
                 )
                 continue
 
-            source_l = str(prod.get("source") or "").lower()
-            skip_perfume = (
-                source_l.startswith("ebay")
-                or source_l.startswith("aliexpress")
-                or source_l.startswith("inspireuplift")
+            skip_perfume = source_matches_prefixes(
+                prod.get("source"),
+                settings.skip_perfume_source_prefixes,
             )
             if (
                 not allow_perfume
