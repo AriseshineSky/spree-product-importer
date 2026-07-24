@@ -124,6 +124,14 @@ def _process_file(
             # StandardProduct validation, which rejects residual <a> tags.
             prepare_product_description(prod)
 
+            if category_filter(store_code, prod):
+                logger.debug(f"[BlacklistCategory] {prod.get('categories')}")
+                continue
+
+            # Drop categories before StandardProduct — Spree upload does not
+            # use them, and duplicate path segments fail validation.
+            prod.pop("categories", None)
+
             if "amz" not in str(prod.get("source", "")).lower():
                 try:
                     StandardProduct(**prod)
@@ -135,10 +143,6 @@ def _process_file(
                         e,
                     )
                     continue
-
-            if category_filter(store_code, prod):
-                logger.debug(f"[BlacklistCategory] {prod['categories']}")
-                continue
 
             price = prod.get("price", None)
             if (
@@ -228,7 +232,6 @@ def _process_file(
                     )
                     continue
 
-            prod.pop("categories", None)
             if not pipeline.add(prod):
                 logger.info(
                     "[DailyQuotaReached] Stopping file %s",
