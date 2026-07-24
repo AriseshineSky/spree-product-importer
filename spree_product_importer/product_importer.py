@@ -40,7 +40,7 @@ _SPRAY_WORD_RE = re.compile(r"\bspray\b", re.IGNORECASE)
 
 def is_spray_from_product_titles(prod: dict) -> bool:
     source = (prod.get("source") or "").lower()
-    if source.startswith("amz_"):
+    if source.startswith("amz_") or source.startswith("ebay"):
         return False
 
     for key in ("title", "title_en"):
@@ -169,7 +169,13 @@ def _process_file(
                 )
                 continue
 
-            if not allow_perfume and is_perfume_from_product_titles(prod):
+            source_l = str(prod.get("source") or "").lower()
+            skip_perfume = source_l.startswith("ebay")
+            if (
+                not allow_perfume
+                and not skip_perfume
+                and is_perfume_from_product_titles(prod)
+            ):
                 report.perfume_filtered += 1
                 logger.debug(
                     "[ProductFiltered] ProductID: %s, "
