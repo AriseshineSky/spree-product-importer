@@ -44,6 +44,7 @@ def is_spray_from_product_titles(prod: dict) -> bool:
         source.startswith("amz_")
         or source.startswith("ebay")
         or source.startswith("aliexpress")
+        or source.startswith("inspireuplift")
     ):
         return False
 
@@ -174,8 +175,10 @@ def _process_file(
                 continue
 
             source_l = str(prod.get("source") or "").lower()
-            skip_perfume = source_l.startswith("ebay") or source_l.startswith(
-                "aliexpress"
+            skip_perfume = (
+                source_l.startswith("ebay")
+                or source_l.startswith("aliexpress")
+                or source_l.startswith("inspireuplift")
             )
             if (
                 not allow_perfume
