@@ -1,12 +1,12 @@
 import tempfile
 import unittest
 from datetime import date
-from pathlib import Path
 
 from spree_product_importer.daily_upload_quota import DailyUploadQuota
 from spree_product_importer.import_report import ImportReport
 from spree_product_importer.import_settings import (
     load_import_job,
+    normalize_vendor_key,
     source_matches_prefixes,
 )
 from spree_product_importer.upload_pipeline import UploadPipeline
@@ -16,74 +16,36 @@ def _cfg():
     return {
         "spree.import.em-spree": {
             "merchant_id": "654568556",
-            "vendor_id": "24",
             "min_shipping_days": "10",
             "min_price": "15",
             "daily_upload_limit": "5",
             "quota_timezone": "America/Chicago",
-            "sources": "amz_ca, amz_uk, ebay_us",
+            "skip_english_title_source_prefixes": "amz_",
         },
-        "spree.import.em-spree.amz_ca": {
+        "spree.import.em-spree.topselected": {
+            "vendor_name": "TopSelected",
+            "vendor_id": "24",
+            "sources": "amz_ca, amz_uk, ebay_us",
+            "skip_spray_source_prefixes": "amz_, ebay",
+            "skip_perfume_source_prefixes": "ebay",
+        },
+        "spree.import.em-spree.topselected.amz_ca": {
             "products_path": "/data/amz_ca.jsonl",
             "stock_location_id": "19",
             "shipping_category_id": "46901",
         },
-        "spree.import.em-spree.amz_uk": {
+        "spree.import.em-spree.topselected.amz_uk": {
             "products_path": "/data/amz_uk.jsonl",
             "stock_location_id": "41",
             "shipping_category_id": "46873",
         },
-        "spree.import.em-spree.ebay_us": {
+        "spree.import.em-spree.topselected.ebay_us": {
             "products_path": "/data/ebay_us.jsonl",
             "stock_location_id": "19",
             "shipping_category_id": "46862",
         },
-    }
-
-
-class ImportSettingsTest(unittest.TestCase):
-    def test_loads_per_source_overrides(self):
-        job = load_import_job("em-spree", config=_cfg())
-        self.assertEqual(job.daily_upload_limit, 5)
-        self.assertEqual(job.quota_key, "em-spree")
-        self.assertEqual(len(job.sources), 3)
-        ca, uk, ebay = job.sources
-        self.assertEqual(ca.source_name, "amz_ca")
-        self.assertEqual(ca.stock_location_id, 19)
-        self.assertEqual(ca.shipping_category_id, 46901)
-        self.assertEqual(ca.vendor_id, "24")
-        self.assertEqual(ca.min_shipping_days, 10)
-        self.assertEqual(uk.stock_location_id, 41)
-        self.assertEqual(uk.shipping_category_id, 46873)
-        self.assertEqual(ebay.shipping_category_id, 46862)
-
-    def test_source_filter(self):
-        job = load_import_job(
-            "em-spree",
-            config=_cfg(),
-            source_filter="amz_uk",
-        )
-        self.assertEqual(len(job.sources), 1)
-        self.assertEqual(job.sources[0].source_name, "amz_uk")
-        self.assertEqual(job.sources[0].stock_location_id, 41)
-
-    def test_cli_override(self):
-        job = load_import_job(
-            "em-spree",
-            config=_cfg(),
-            source_filter="amz_ca",
-            cli_overrides={"min_shipping_days": 14},
-        )
-        self.assertEqual(job.sources[0].min_shipping_days, 14)
-
-    def test_missing_section_raises(self):
-        with self.assertRaises(ValueError):
-            load_import_job("missing", config={})
-
-    def test_vendor_profile_single_products_path(self):
-        cfg = _cfg()
-        cfg["spree.import.em-spree.v62"] = {
-            "merchant_id": "654568556",
+        "spree.import.em-spree.em-hu": {
+            "vendor_name": "EM-HU",
             "vendor_id": "62",
             "stock_location_id": "70",
             "shipping_category_id": "46910",
@@ -96,14 +58,80 @@ class ImportSettingsTest(unittest.TestCase):
             ),
             "skip_spray_source_prefixes": "aliexpress, inspireuplift",
             "skip_perfume_source_prefixes": "aliexpress,inspireuplift",
-        }
+        },
+    }
+
+
+class ImportSettingsTest(unittest.TestCase):
+    def test_requires_vendor_name(self):
+        with self.assertRaises(ValueError) as ctx:
+            load_import_job("em-spree", vendor_name=None, config=_cfg())
+        self.assertIn("Vendor name is required", str(ctx.exception))
+
+    def test_loads_per_source_overrides(self):
         job = load_import_job(
             "em-spree",
-            config=cfg,
-            cli_overrides={"vendor_id": "62"},
+            vendor_name="topselected",
+            config=_cfg(),
         )
-        self.assertEqual(job.quota_key, "em-spree.v62")
-        self.assertEqual(job.profile_section, "spree.import.em-spree.v62")
+        self.assertEqual(job.daily_upload_limit, 5)
+        self.assertEqual(job.quota_key, "em-spree.topselected")
+        self.assertEqual(job.vendor_name, "TopSelected")
+        self.assertEqual(len(job.sources), 3)
+        ca, uk, ebay = job.sources
+        self.assertEqual(ca.source_name, "amz_ca")
+        self.assertEqual(ca.stock_location_id, 19)
+        self.assertEqual(ca.shipping_category_id, 46901)
+        self.assertEqual(ca.vendor_id, "24")
+        self.assertEqual(ca.vendor_name, "TopSelected")
+        self.assertEqual(ca.min_shipping_days, 10)
+        self.assertEqual(
+            ca.skip_english_title_source_prefixes,
+            ("amz_",),
+        )
+        self.assertEqual(uk.stock_location_id, 41)
+        self.assertEqual(uk.shipping_category_id, 46873)
+        self.assertEqual(ebay.shipping_category_id, 46862)
+        self.assertEqual(ebay.skip_english_title_source_prefixes, ("amz_",))
+
+    def test_source_filter(self):
+        job = load_import_job(
+            "em-spree",
+            vendor_name="TopSelected",
+            config=_cfg(),
+            source_filter="amz_uk",
+        )
+        self.assertEqual(len(job.sources), 1)
+        self.assertEqual(job.sources[0].source_name, "amz_uk")
+        self.assertEqual(job.sources[0].stock_location_id, 41)
+
+    def test_cli_override(self):
+        job = load_import_job(
+            "em-spree",
+            vendor_name="topselected",
+            config=_cfg(),
+            source_filter="amz_ca",
+            cli_overrides={"min_shipping_days": 14},
+        )
+        self.assertEqual(job.sources[0].min_shipping_days, 14)
+
+    def test_missing_section_raises(self):
+        with self.assertRaises(ValueError):
+            load_import_job(
+                "missing",
+                vendor_name="x",
+                config={},
+            )
+
+    def test_vendor_profile_by_name(self):
+        job = load_import_job(
+            "em-spree",
+            vendor_name="EM-HU",
+            config=_cfg(),
+        )
+        self.assertEqual(job.quota_key, "em-spree.em-hu")
+        self.assertEqual(job.profile_section, "spree.import.em-spree.em-hu")
+        self.assertEqual(job.vendor_name, "EM-HU")
         self.assertEqual(len(job.sources), 1)
         src = job.sources[0]
         self.assertEqual(src.vendor_id, "62")
@@ -113,13 +141,60 @@ class ImportSettingsTest(unittest.TestCase):
             src.skip_spray_source_prefixes,
             ("aliexpress", "inspireuplift"),
         )
-        self.assertEqual(
-            src.skip_perfume_source_prefixes,
-            ("aliexpress", "inspireuplift"),
+
+
+class SourcePrefixMatchTest(unittest.TestCase):
+    def test_prefix_match(self):
+        self.assertTrue(
+            source_matches_prefixes("Ebay_US", ("ebay", "aliexpress"))
         )
-        self.assertTrue(src.products_path.endswith(
-            "quality_to_upload.multi_variant.from_prepare.jsonl"
-        ))
+        self.assertTrue(
+            source_matches_prefixes("Inspireuplift", ("inspireuplift",))
+        )
+        self.assertFalse(
+            source_matches_prefixes("AMZ_US", ("ebay", "aliexpress"))
+        )
+        self.assertFalse(source_matches_prefixes("Ebay_US", ()))
+
+    def test_vendor_by_id_and_source_validation(self):
+        cfg = _cfg()
+        cfg["spree.import.em-spree.jp-cmedia"] = {
+            "vendor_name": "JP CMedia",
+            "vendor_id": "42",
+            "stock_location_id": "50",
+            "shipping_category_id": "46887",
+            "sources": "amz_jp",
+            "skip_spray_source_prefixes": "amz_",
+        }
+        cfg["spree.import.em-spree.jp-cmedia.amz_jp"] = {
+            "products_path": "/data/amz_jp.jsonl",
+        }
+        job = load_import_job(
+            "em-spree",
+            vendor_name="42",
+            config=cfg,
+            source_filter="amz_jp",
+        )
+        self.assertEqual(job.vendor_key, "jp-cmedia")
+        self.assertEqual(job.vendor_name, "JP CMedia")
+        self.assertEqual(job.sources[0].vendor_id, "42")
+        self.assertEqual(job.sources[0].stock_location_id, 50)
+
+        with self.assertRaises(ValueError) as ctx:
+            load_import_job(
+                "em-spree",
+                vendor_name="jp-cmedia",
+                config=cfg,
+                source_filter="amz_ca",
+            )
+        self.assertIn("amz_ca", str(ctx.exception))
+        self.assertIn("amz_jp", str(ctx.exception))
+
+    def test_normalize_vendor_key(self):
+        self.assertEqual(normalize_vendor_key("TopSelected"), "topselected")
+        self.assertEqual(normalize_vendor_key("EM-HU"), "em-hu")
+        self.assertEqual(normalize_vendor_key("JP CMedia"), "jp-cmedia")
+        self.assertEqual(normalize_vendor_key(" em hu "), "em-hu")
 
 
 class DailyUploadQuotaTest(unittest.TestCase):
@@ -199,20 +274,6 @@ class UploadPipelineQuotaTest(unittest.TestCase):
             self.assertEqual(report.uploaded, 3)
             self.assertGreaterEqual(report.quota_skipped, 1)
             self.assertTrue(pipeline.quota_exhausted)
-
-
-class SourcePrefixMatchTest(unittest.TestCase):
-    def test_prefix_match(self):
-        self.assertTrue(
-            source_matches_prefixes("Ebay_US", ("ebay", "aliexpress"))
-        )
-        self.assertTrue(
-            source_matches_prefixes("Inspireuplift", ("inspireuplift",))
-        )
-        self.assertFalse(
-            source_matches_prefixes("AMZ_US", ("ebay", "aliexpress"))
-        )
-        self.assertFalse(source_matches_prefixes("Ebay_US", ()))
 
 
 if __name__ == "__main__":

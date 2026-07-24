@@ -1,11 +1,14 @@
-# St. Louis / America/Chicago — TopSelected (vendor 24) nightly upload
+# St. Louis / America/Chicago — nightly uploads by store + vendor name
 CRON_TZ=America/Chicago
 SHELL=/bin/bash
 PATH=/home/Admin/.local/bin:/usr/local/bin:/usr/bin:/bin
 HOME=/home/Admin
 
-# 23:00 STL — TopSelected v24 (amz_ca / amz_uk / ebay_us)
-0 23 * * * /home/Admin/src/spree-product-importer/scripts/run_nightly_import.sh em-spree
+# 23:00 STL — TopSelected (amz_ca / amz_uk / ebay_us)
+0 23 * * * /home/Admin/src/spree-product-importer/scripts/run_nightly_import.sh em-spree topselected
 
-# Optional: EM-HU v62 AliExpress
-# 30 23 * * * /home/Admin/src/spree-product-importer/scripts/run_nightly_import.sh em-spree 62
+# Optional: EM-HU (aliexpress / inspireuplift)
+# 30 23 * * * /home/Admin/src/spree-product-importer/scripts/run_nightly_import.sh em-spree em-hu
+
+# Optional: JP CMedia (amz_jp)
+# 45 23 * * * /home/Admin/src/spree-product-importer/scripts/run_nightly_import.sh em-spree jp-cmedia

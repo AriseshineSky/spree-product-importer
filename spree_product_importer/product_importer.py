@@ -17,14 +17,14 @@ from em_tasks.utils.blacklist_filter import BlacklistFilter
 from spree_product_importer.app_logging import logger
 from spree_product_importer.config import init_db, init_pg_db
 from spree_product_importer.daily_upload_quota import DailyUploadQuota
+from spree_product_importer.description_prepare import (
+    prepare_product_description,
+)
 from spree_product_importer.import_report import ImportReport
 from spree_product_importer.import_settings import (
     ImportSettings,
     load_import_job,
     source_matches_prefixes,
-)
-from spree_product_importer.description_prepare import (
-    prepare_product_description,
 )
 from spree_product_importer.perfume_title_filter import (
     is_perfume_from_product_titles,
@@ -71,16 +71,21 @@ def _process_file(
     assert path
     label = settings.source_name or path
     logger.info(
-        "[ImportSource] name=%s path=%s vendor_id=%s "
-        "stock_location_id=%s shipping_category_id=%s "
-        "min_shipping_days=%s min_price=%s",
+        "[ImportSource] store=%s vendor=%s vendor_id=%s name=%s path=%s "
+        "merchant_id=%s stock_location_id=%s shipping_category_id=%s "
+        "tax_category_id=%s min_shipping_days=%s min_price=%s max_price=%s",
+        store_code,
+        settings.vendor_name or settings.vendor_key,
+        settings.vendor_id,
         label,
         path,
-        settings.vendor_id,
+        settings.merchant_id,
         settings.stock_location_id,
         settings.shipping_category_id,
+        settings.tax_category_id,
         settings.min_shipping_days,
         settings.min_price,
+        settings.max_price,
     )
 
     if not os.path.isfile(path):
@@ -205,14 +210,21 @@ def _process_file(
             if dropped:
                 report.variants_truncated += 1
                 logger.debug(
-                    "[VariantsTruncated] ProductID: %s, "
-                    "Dropped: %s, Kept: %s",
+                    "[VariantsTruncated] ProductID: %s, Dropped: %s, Kept: %s",
                     prod.get("source_product_id", ""),
                     dropped,
                     len(prod.get("variants") or []),
                 )
 
-            if require_english_title and not upload_title_is_english(prod):
+            skip_english = source_matches_prefixes(
+                prod.get("source"),
+                settings.skip_english_title_source_prefixes,
+            )
+            if (
+                require_english_title
+                and not skip_english
+                and not upload_title_is_english(prod)
+            ):
                 report.non_english_title += 1
                 logger.debug(
                     "[NonEnglishTitle] ProductID: %s, "
@@ -257,6 +269,17 @@ def _process_file(
 @click.command("Import products to Spree")
 @click.option("-s", "--store_code", type=str, required=True)
 @click.option(
+    "-vn",
+    "--vendor",
+    "vendor_name",
+    type=str,
+    required=True,
+    help=(
+        "Vendor profile name/key from config "
+        "(e.g. topselected, em-hu, jp-cmedia, or vendor_id)."
+    ),
+)
+@click.option(
     "-src",
     "--source",
     "source_name",
@@ -285,14 +308,6 @@ def _process_file(
     default=None,
     type=str,
     help="Google Merchant ID (default from config).",
-)
-@click.option(
-    "-v",
-    "--vendor_id",
-    required=False,
-    default=None,
-    type=str,
-    help="Vendor ID (default from config).",
 )
 @click.option(
     "-tc",
@@ -367,12 +382,12 @@ def _process_file(
 @click.argument("products_path", required=False, default=None)
 def import_products(
     store_code,
+    vendor_name,
     products_path,
     source_name,
     shipping_category_id,
     stock_location_id,
     merchant_id,
-    vendor_id,
     tax_category_id,
     taxonomy_name,
     min_shipping_days,
@@ -388,7 +403,6 @@ def import_products(
 
     cli_overrides = {
         "merchant_id": merchant_id,
-        "vendor_id": vendor_id,
         "stock_location_id": stock_location_id,
         "shipping_category_id": shipping_category_id,
         "tax_category_id": tax_category_id,
@@ -402,6 +416,7 @@ def import_products(
     try:
         job = load_import_job(
             store_code,
+            vendor_name=vendor_name,
             source_filter=source_name,
             cli_overrides=cli_overrides,
             products_path=(
@@ -436,16 +451,22 @@ def import_products(
         job.daily_upload_limit,
         timezone=job.quota_timezone,
     )
+    first = job.sources[0] if job.sources else None
     logger.info(
-        "[ImportJob] store=%s profile=%s quota_key=%s sources=%s "
-        "daily_limit=%s quota_used=%s timezone=%s",
+        "[ImportJob] store=%s vendor=%s vendor_key=%s vendor_id=%s "
+        "profile=%s quota_key=%s sources=%s daily_limit=%s "
+        "quota_used=%s timezone=%s merchant_id=%s",
         store_code,
+        job.vendor_name,
+        job.vendor_key,
+        first.vendor_id if first else None,
         job.profile_section,
         job.quota_key,
         [s.source_name or s.products_path for s in job.sources],
         job.daily_upload_limit or "unlimited",
         quota.uploaded,
         job.quota_timezone,
+        first.merchant_id if first else None,
     )
     if quota.is_exhausted:
         logger.info(
@@ -480,7 +501,8 @@ def import_products(
 
     if quota.enabled:
         logger.info(
-            "[DailyQuota] quota_key=%s uploaded_today=%s limit=%s remaining=%s",
+            "[DailyQuota] quota_key=%s uploaded_today=%s "
+            "limit=%s remaining=%s",
             job.quota_key,
             quota.uploaded,
             quota.limit,
