@@ -1,6 +1,7 @@
 from collections.abc import Callable
 
 from spree_product_importer.app_logging import logger
+from spree_product_importer.daily_upload_quota import DailyUploadQuota
 from spree_product_importer.import_report import ImportReport
 from spree_product_importer.product_source_lookup import (
     ProductSourceLookup,
@@ -14,6 +15,7 @@ class UploadPipeline:
         lookup: ProductSourceLookup,
         report: ImportReport,
         upload_batch: Callable[[list[dict]], None],
+        quota: DailyUploadQuota | None = None,
         lookup_batch_size: int = 500,
         upload_batch_size: int = 50,
         max_upload_retries: int = 3,
@@ -21,16 +23,24 @@ class UploadPipeline:
         self.lookup = lookup
         self.report = report
         self.upload_batch = upload_batch
+        self.quota = quota
         self.lookup_batch_size = lookup_batch_size
         self.upload_batch_size = upload_batch_size
         self.max_upload_retries = max_upload_retries
         self._check_buf: list[dict] = []
         self._upload_buf: list[dict] = []
+        self.quota_exhausted = False
 
-    def add(self, prod: dict) -> None:
+    def add(self, prod: dict) -> bool:
+        """Queue a product. Returns False when daily quota is exhausted."""
+        if self.quota_exhausted:
+            self.report.quota_skipped += 1
+            return False
+
         self._check_buf.append(prod)
         if len(self._check_buf) >= self.lookup_batch_size:
             self.flush_check_buffer()
+        return not self.quota_exhausted
 
     def flush_check_buffer(self) -> None:
         if not self._check_buf:
@@ -53,6 +63,10 @@ class UploadPipeline:
 
         existing = self.lookup.find_existing(keys)
         for key, prod in keyed_products:
+            if self.quota_exhausted:
+                self.report.quota_skipped += 1
+                continue
+
             if key in existing:
                 self.report.already_exists += 1
                 logger.debug(
@@ -61,6 +75,13 @@ class UploadPipeline:
                     key[1],
                 )
                 continue
+
+            if self.quota and self.quota.enabled:
+                allowed = self.quota.take(len(self._upload_buf) + 1)
+                if allowed <= len(self._upload_buf):
+                    self.quota_exhausted = True
+                    self.report.quota_skipped += 1
+                    continue
 
             self.report.to_upload += 1
             self._upload_buf.append(prod)
@@ -73,10 +94,29 @@ class UploadPipeline:
         if not self._upload_buf:
             return
 
+        batch = list(self._upload_buf)
+        if self.quota and self.quota.enabled:
+            allowed = self.quota.take(len(batch))
+            if allowed <= 0:
+                self.report.quota_skipped += len(batch)
+                self.report.to_upload -= len(batch)
+                self._upload_buf.clear()
+                self.quota_exhausted = True
+                return
+            if allowed < len(batch):
+                skipped = len(batch) - allowed
+                self.report.quota_skipped += skipped
+                self.report.to_upload -= skipped
+                batch = batch[:allowed]
+                self.quota_exhausted = True
+
         max_retries = self.max_upload_retries
         while max_retries > 0:
             try:
-                self.upload_batch(self._upload_buf)
+                self.upload_batch(batch)
+                self.report.uploaded += len(batch)
+                if self.quota:
+                    self.quota.record(len(batch))
                 self._upload_buf.clear()
                 return
             except Exception as e:

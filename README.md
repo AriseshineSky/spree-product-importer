@@ -83,23 +83,63 @@ with session_scope() as session:
 
 ## Usage
 
-```bash
-spree-product-importer --help
+With `[spree.import.{store}]` configured (IDs + per-source paths), run:
 
+```bash
+# All configured sources for default vendor profile (TopSelected v24)
+uv run spree-product-importer -s em-spree
+
+# One source only
+uv run spree-product-importer -s em-spree -src amz_ca
+
+# Vendor profile (EM-HU v62 AliExpress)
+uv run spree-product-importer -s em-spree -v 62
+
+# Ad-hoc file (still uses store/source defaults; CLI flags override)
+uv run spree-product-importer -s em-spree -src amz_uk ./custom.jsonl
+```
+
+Equivalent TopSelected (vendor 24) config — CA / UK / eBay:
+
+```ini
+[spree.import.em-spree]
+merchant_id = 654568556
+vendor_id = 24
+min_shipping_days = 10
+min_price = 15
+daily_upload_limit = 80000
+quota_timezone = America/Chicago
+sources = amz_ca, amz_uk, ebay_us
+
+[spree.import.em-spree.amz_ca]
+products_path = /home/Admin/em-tasks/data/amazon/amz_ca_to_upload.jsonl
+stock_location_id = 19
+shipping_category_id = 46901
+
+[spree.import.em-spree.amz_uk]
+products_path = /home/Admin/em-tasks/data/amazon/amz_uk_to_upload.jsonl
+stock_location_id = 41
+shipping_category_id = 46873
+
+[spree.import.em-spree.ebay_us]
+products_path = /home/Admin/em-tasks/data/ebay/ebay_us_to_upload.jsonl
+stock_location_id = 19
+shipping_category_id = 46862
+```
+
+Nightly cron (America/Chicago 23:00): see `deploy/crontab.example` and
+`scripts/run_nightly_import.sh`.
+
+Legacy one-shot (still works if you pass all IDs + a file path):
+
+```bash
 uv run spree-product-importer \
-  -s us \
+  -s em-spree \
   -m MERCHANT_ID \
   -v VENDOR_ID \
   -sl 1 \
   -sc 1 \
   ./products.jsonl
-```
-
-Or run as a module:
-
-```bash
-uv run python -m spree_product_importer.product_importer \
-  -s us -m ... -v ... -sl 1 -sc 1 ./products.jsonl
 ```
 
 ## Development
@@ -117,10 +157,12 @@ uv run ruff format spree_product_importer
 | Flag | Description |
 |------|-------------|
 | `-s, --store_code` | Store code (required) |
-| `-m, --merchant_id` | Google Merchant ID |
-| `-v, --vendor_id` | Vendor ID |
-| `-sl, --stock_location_id` | Spree stock location ID |
-| `-sc, --shipping_category_id` | Spree shipping category ID |
+| `-src, --source` | Only one configured source name |
+| `-m, --merchant_id` | Google Merchant ID (config default) |
+| `-v, --vendor_id` | Vendor ID (config default) |
+| `-sl, --stock_location_id` | Spree stock location ID (per-source config) |
+| `-sc, --shipping_category_id` | Spree shipping category ID (per-source config) |
+| `-dl, --daily_upload_limit` | Max successful uploads/day (0=unlimited) |
 | `-pl, --min_price` | Minimum price (default 15) |
 | `-ph, --max_price` | Maximum price (default 300) |
 | `-nb, --dont_filter_blacklist` | Skip blacklist filtering |
