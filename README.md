@@ -157,12 +157,22 @@ nightly jobs; cron calls that manager once at STL 11pm.
 | `scripts/run_nightly_import.sh` | Single job: `store` `vendor` `[source]` |
 | `deploy/crontab.example` | Cron template (`CRON_TZ=America/Chicago`) |
 
-Default `JOBS` (TopSelected):
+Default `JOBS` (Amazon; DE/JP omitted; NL = vendor 61 only):
 
-| Source | JSONL |
-|--------|-------|
-| `amz_ca` | `/home/Admin/em-tasks/data/amazon/amz_ca_to_upload.jsonl` |
-| `amz_uk` | `/home/Admin/em-tasks/data/amazon/amz_uk_to_upload.jsonl` |
+| Vendor key | Source | vendor_id | sl | sc |
+|------------|--------|-----------|----|----|
+| `topselected` | `amz_ca` | 24 | 19 | 46901 |
+| `topselected` | `amz_us` | 24 | 19 | 46865 |
+| `topselected` | `amz_uk` | 24 | 41 | 46873 |
+| `dubai-essence` | `amz_ae` | 49 | 57 | 46896 |
+| `em-mx` | `amz_mx` | 50 | 58 | 46897 |
+| `em-in` | `amz_in` | 52 | 60 | 46899 |
+| `everymarket-it` | `amz_it` | 44 | 52 | 46889 |
+| `em-pl` | `amz_pl` | 60 | 68 | 46908 |
+| `em-nl` | `amz_nl` | 61 | 69 | 46909 |
+| `em-horizon` | `amz_br` | 63 | 71 | 46911 |
+
+JSONL: `/home/Admin/em-tasks/data/amazon/amz_{mp}_to_upload.jsonl`
 
 ```bash
 cd ~/spree-product-importer
@@ -170,12 +180,13 @@ cd ~/spree-product-importer
 # Preview scheduled jobs
 ./scripts/run_nightly_uploads.sh --dry-run
 
-# Run Amazon CA / UK now (same as cron)
+# Run all configured Amazon jobs (same as cron)
 ./scripts/run_nightly_uploads.sh
 
-# One source only
-./scripts/run_nightly_import.sh em-spree topselected amz_ca
-./scripts/run_nightly_import.sh em-spree topselected amz_uk
+# One marketplace
+./scripts/run_nightly_import.sh em-spree topselected amz_us
+./scripts/run_nightly_import.sh em-spree em-nl amz_nl
+uv run spree-product-importer -s em-spree -vn em-mx -src amz_mx
 ```
 
 Install cron on mongo:
@@ -187,7 +198,7 @@ crontab -e
 ```
 
 Logs: `~/logs/spree-import/nightly-uploads-YYYYMMDD.log` and per-job
-`em-spree-topselected-amz_{ca,uk}-YYYYMMDD.log`.
+`em-spree-*-amz_*-YYYYMMDD.log`.
 
 ## Development
 

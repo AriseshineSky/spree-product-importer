@@ -16,11 +16,20 @@ mkdir -p "$LOG_DIR"
 DAY="$(TZ=America/Chicago date +%Y%m%d)"
 MANAGER_LOG="${LOG_DIR}/nightly-uploads-${DAY}.log"
 
-# store  vendor       [source]
+# store  vendor           [source]
 # Edit this list to enable/disable nightly uploads.
+# DE / JP left out (multi-vendor). NL uses vendor 61 only.
 JOBS=(
   "em-spree topselected amz_ca"
+  "em-spree topselected amz_us"
   "em-spree topselected amz_uk"
+  "em-spree dubai-essence amz_ae"
+  "em-spree em-mx amz_mx"
+  "em-spree em-in amz_in"
+  "em-spree everymarket-it amz_it"
+  "em-spree em-pl amz_pl"
+  "em-spree em-nl amz_nl"
+  "em-spree em-horizon amz_br"
   # "em-spree topselected ebay_us"
   # "em-spree em-hu"
   # "em-spree jp-cmedia"

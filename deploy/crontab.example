@@ -4,7 +4,7 @@ SHELL=/bin/bash
 PATH=/home/Admin/.local/bin:/usr/local/bin:/usr/bin:/bin
 HOME=/home/Admin
 
-# 23:00 STL — unified manager (Amazon CA + Amazon UK; edit JOBS in script)
+# 23:00 STL — unified manager (Amazon CA/US/UK/AE/MX/IN/IT/PL/NL/BR; edit JOBS)
 0 23 * * * /home/Admin/spree-product-importer/scripts/run_nightly_uploads.sh
 
 # Optional single-vendor / single-source examples:

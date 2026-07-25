@@ -25,7 +25,7 @@ def _cfg():
         "spree.import.em-spree.topselected": {
             "vendor_name": "TopSelected",
             "vendor_id": "24",
-            "sources": "amz_ca, amz_uk, ebay_us",
+            "sources": "amz_ca, amz_us, amz_uk, ebay_us",
             "skip_spray_source_prefixes": "amz_, ebay",
             "skip_perfume_source_prefixes": "ebay",
         },
@@ -33,6 +33,11 @@ def _cfg():
             "products_path": "/data/amz_ca.jsonl",
             "stock_location_id": "19",
             "shipping_category_id": "46901",
+        },
+        "spree.import.em-spree.topselected.amz_us": {
+            "products_path": "/data/amz_us.jsonl",
+            "stock_location_id": "19",
+            "shipping_category_id": "46865",
         },
         "spree.import.em-spree.topselected.amz_uk": {
             "products_path": "/data/amz_uk.jsonl",
@@ -77,8 +82,8 @@ class ImportSettingsTest(unittest.TestCase):
         self.assertEqual(job.daily_upload_limit, 5)
         self.assertEqual(job.quota_key, "em-spree.topselected")
         self.assertEqual(job.vendor_name, "TopSelected")
-        self.assertEqual(len(job.sources), 3)
-        ca, uk, ebay = job.sources
+        self.assertEqual(len(job.sources), 4)
+        ca, us, uk, ebay = job.sources
         self.assertEqual(ca.source_name, "amz_ca")
         self.assertEqual(ca.stock_location_id, 19)
         self.assertEqual(ca.shipping_category_id, 46901)
@@ -89,6 +94,9 @@ class ImportSettingsTest(unittest.TestCase):
             ca.skip_english_title_source_prefixes,
             ("amz_",),
         )
+        self.assertEqual(us.source_name, "amz_us")
+        self.assertEqual(us.stock_location_id, 19)
+        self.assertEqual(us.shipping_category_id, 46865)
         self.assertEqual(uk.stock_location_id, 41)
         self.assertEqual(uk.shipping_category_id, 46873)
         self.assertEqual(ebay.shipping_category_id, 46862)
