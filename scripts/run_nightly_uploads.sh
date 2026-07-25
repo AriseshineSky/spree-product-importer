@@ -25,6 +25,7 @@ JOBS=(
   "em-spree topselected amz_uk"
   "em-spree dubai-essence amz_ae"
   "em-spree em-mx amz_mx"
+  "em-spree em-fr amz_fr"
   "em-spree em-in amz_in"
   "em-spree everymarket-it amz_it"
   "em-spree em-pl amz_pl"

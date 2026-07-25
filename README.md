@@ -166,6 +166,7 @@ Default `JOBS` (Amazon; DE/JP omitted; NL = vendor 61 only):
 | `topselected` | `amz_uk` | 24 | 41 | 46873 |
 | `dubai-essence` | `amz_ae` | 49 | 57 | 46896 |
 | `em-mx` | `amz_mx` | 50 | 58 | 46897 |
+| `em-fr` | `amz_fr` | 57 | 65 | 46905 |
 | `em-in` | `amz_in` | 52 | 60 | 46899 |
 | `everymarket-it` | `amz_it` | 44 | 52 | 46889 |
 | `em-pl` | `amz_pl` | 60 | 68 | 46908 |
