@@ -276,5 +276,90 @@ class UploadPipelineQuotaTest(unittest.TestCase):
             self.assertTrue(pipeline.quota_exhausted)
 
 
+class UploadPipelineRetryTest(unittest.TestCase):
+    def test_waits_then_retries_on_http_502(self):
+        from spree_product_importer.upload_pipeline import (
+            is_transient_upload_error,
+        )
+
+        self.assertTrue(
+            is_transient_upload_error(
+                ValueError("Spree API products/import failed: HTTP 502 '...'")
+            )
+        )
+
+        sleeps: list[float] = []
+        calls = {"n": 0}
+
+        def upload_batch(_buf):
+            calls["n"] += 1
+            if calls["n"] < 3:
+                raise ValueError(
+                    "Spree API products/import failed: HTTP 502 "
+                    "'Please try again in 30 seconds.'"
+                )
+
+        class FakeLookup:
+            def find_existing(self, keys):
+                return set()
+
+        report = ImportReport()
+        pipeline = UploadPipeline(
+            lookup=FakeLookup(),
+            report=report,
+            upload_batch=upload_batch,
+            lookup_batch_size=10,
+            upload_batch_size=1,
+            max_upload_retries=5,
+            retry_wait_seconds=30.0,
+            sleeper=sleeps.append,
+        )
+        pipeline.add(
+            {
+                "source": "AMZ_CA",
+                "source_product_id": "p1",
+                "product_id": "p1",
+            }
+        )
+        pipeline.finish()
+
+        self.assertEqual(calls["n"], 3)
+        self.assertEqual(sleeps, [30.0, 60.0])
+        self.assertEqual(report.uploaded, 1)
+
+    def test_raises_after_retries_exhausted(self):
+        sleeps: list[float] = []
+
+        def upload_batch(_buf):
+            raise ValueError(
+                "Spree API products/import failed: HTTP 502 'bad gateway'"
+            )
+
+        class FakeLookup:
+            def find_existing(self, keys):
+                return set()
+
+        pipeline = UploadPipeline(
+            lookup=FakeLookup(),
+            report=ImportReport(),
+            upload_batch=upload_batch,
+            lookup_batch_size=10,
+            upload_batch_size=1,
+            max_upload_retries=3,
+            retry_wait_seconds=30.0,
+            sleeper=sleeps.append,
+        )
+        pipeline.add(
+            {
+                "source": "AMZ_UK",
+                "source_product_id": "p1",
+                "product_id": "p1",
+            }
+        )
+        with self.assertRaises(ValueError):
+            pipeline.finish()
+        self.assertEqual(sleeps, [30.0, 60.0])
+
+
 if __name__ == "__main__":
     unittest.main()
