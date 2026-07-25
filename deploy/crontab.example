@@ -1,14 +1,13 @@
-# St. Louis / America/Chicago — nightly uploads by store + vendor name
+# St. Louis / America/Chicago — nightly uploads (mongo VPS, user Admin)
 CRON_TZ=America/Chicago
 SHELL=/bin/bash
 PATH=/home/Admin/.local/bin:/usr/local/bin:/usr/bin:/bin
 HOME=/home/Admin
 
-# 23:00 STL — TopSelected (amz_ca / amz_uk / ebay_us)
-0 23 * * * /home/Admin/src/spree-product-importer/scripts/run_nightly_import.sh em-spree topselected
+# 23:00 STL — unified manager (Amazon CA + Amazon UK; edit JOBS in script)
+0 23 * * * /home/Admin/spree-product-importer/scripts/run_nightly_uploads.sh
 
-# Optional: EM-HU (aliexpress / inspireuplift)
-# 30 23 * * * /home/Admin/src/spree-product-importer/scripts/run_nightly_import.sh em-spree em-hu
-
-# Optional: JP CMedia (amz_jp)
-# 45 23 * * * /home/Admin/src/spree-product-importer/scripts/run_nightly_import.sh em-spree jp-cmedia
+# Optional single-vendor / single-source examples:
+# 30 23 * * * /home/Admin/spree-product-importer/scripts/run_nightly_import.sh em-spree em-hu
+# 45 23 * * * /home/Admin/spree-product-importer/scripts/run_nightly_import.sh em-spree jp-cmedia
+# 0 0 * * * /home/Admin/spree-product-importer/scripts/run_nightly_import.sh em-spree topselected ebay_us

@@ -142,8 +142,48 @@ uv run spree-product-importer -s em-spree -vn em-hu -src inspireuplift
 ./scripts/run_nightly_import.sh em-spree em-hu
 ```
 
-Nightly cron (America/Chicago 23:00): see `deploy/crontab.example` and
-`scripts/run_nightly_import.sh` (`store` + `vendor` args).
+### Nightly uploads (mongo, America/Chicago 23:00)
+
+On **mongo** as `Admin` (`~/spree-product-importer`). One shell manages all
+nightly jobs; cron calls that manager once at STL 11pm.
+
+| Script | Role |
+|--------|------|
+| `scripts/run_nightly_uploads.sh` | Unified manager — edit `JOBS` list |
+| `scripts/run_nightly_import.sh` | Single job: `store` `vendor` `[source]` |
+| `deploy/crontab.example` | Cron template (`CRON_TZ=America/Chicago`) |
+
+Default `JOBS` (TopSelected):
+
+| Source | JSONL |
+|--------|-------|
+| `amz_ca` | `/home/Admin/em-tasks/data/amazon/amz_ca_to_upload.jsonl` |
+| `amz_uk` | `/home/Admin/em-tasks/data/amazon/amz_uk_to_upload.jsonl` |
+
+```bash
+cd ~/spree-product-importer
+
+# Preview scheduled jobs
+./scripts/run_nightly_uploads.sh --dry-run
+
+# Run Amazon CA / UK now (same as cron)
+./scripts/run_nightly_uploads.sh
+
+# One source only
+./scripts/run_nightly_import.sh em-spree topselected amz_ca
+./scripts/run_nightly_import.sh em-spree topselected amz_uk
+```
+
+Install cron on mongo:
+
+```bash
+crontab -e
+# paste from deploy/crontab.example
+# key line: 0 23 * * * .../scripts/run_nightly_uploads.sh
+```
+
+Logs: `~/logs/spree-import/nightly-uploads-YYYYMMDD.log` and per-job
+`em-spree-topselected-amz_{ca,uk}-YYYYMMDD.log`.
 
 ## Development
 
