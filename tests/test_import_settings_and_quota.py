@@ -54,7 +54,7 @@ def _cfg():
             "daily_upload_limit": "80000",
             "products_path": (
                 "/home/Admin/em-tasks/data/aliexpress/"
-                "quality_to_upload.multi_variant.from_prepare.jsonl"
+                "aliexpress_to_upload.multi_variant.jsonl"
             ),
             "skip_spray_source_prefixes": "aliexpress, inspireuplift",
             "skip_perfume_source_prefixes": "aliexpress,inspireuplift",

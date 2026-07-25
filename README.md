@@ -115,25 +115,29 @@ Run on **mongo** as `Admin` (`~/spree-product-importer`). Config:
 
 | Source | JSONL |
 |--------|-------|
-| `aliexpress` | `/home/Admin/em-tasks/data/aliexpress/quality_to_upload.multi_variant.from_prepare.jsonl` |
-| `aliexpress_quality` | `/home/Admin/em-tasks/data/aliexpress/quality_to_upload.jsonl` |
+| `aliexpress` | `/home/Admin/em-tasks/data/aliexpress/aliexpress_to_upload.multi_variant.jsonl` |
 | `inspireuplift` | `/home/Admin/em-tasks/data/inspireuplift/inspireuplift_to_upload.multi_variant.jsonl` |
 
 Spray / perfume title filters are **skipped** for `aliexpress*` and
 `inspireuplift` (`skip_spray_source_prefixes` /
 `skip_perfume_source_prefixes` in config).
 
+Single-SKU Aliexpress JSONL (same vendor settings, explicit path):
+
+`/home/Admin/em-tasks/data/aliexpress/aliexpress_to_upload.jsonl`
+
 ```bash
 cd ~/spree-product-importer
 
-# All EM-HU sources (aliexpress → aliexpress_quality → inspireuplift)
+# All EM-HU sources (aliexpress → inspireuplift)
 uv run spree-product-importer -s em-spree -vn em-hu
 
-# AliExpress multi-variant (from prepare)
+# AliExpress multi-variant (from prepare; default products_path)
 uv run spree-product-importer -s em-spree -vn em-hu -src aliexpress
 
-# AliExpress quality
-uv run spree-product-importer -s em-spree -vn em-hu -src aliexpress_quality
+# AliExpress single-SKU
+uv run spree-product-importer -s em-spree -vn em-hu -src aliexpress \
+  /home/Admin/em-tasks/data/aliexpress/aliexpress_to_upload.jsonl
 
 # InspireUplift only
 uv run spree-product-importer -s em-spree -vn em-hu -src inspireuplift
