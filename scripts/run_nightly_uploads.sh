@@ -33,6 +33,9 @@ JOBS=(
   # "em-spree topselected ebay_us"
   # "em-spree em-hu"
   # "em-spree jp-cmedia"
+  # Korean vendors (config: korea-aroamas / amazing-korea)
+  # "em-spree korea-aroamas"
+  # "em-spree amazing-korea"
 )
 
 DRY_RUN=0
