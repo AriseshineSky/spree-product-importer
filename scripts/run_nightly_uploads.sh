@@ -21,7 +21,6 @@ MANAGER_LOG="${LOG_DIR}/nightly-uploads-${DAY}.log"
 # DE / JP left out (multi-vendor). NL uses vendor 61 only.
 JOBS=(
   "em-spree topselected amz_ca"
-  "em-spree topselected amz_us"
   "em-spree topselected amz_uk"
   "em-spree dubai-essence amz_ae"
   "em-spree em-mx amz_mx"
