@@ -157,20 +157,20 @@ nightly jobs; cron calls that manager once at STL 11pm.
 | `scripts/run_nightly_import.sh` | Single job: `store` `vendor` `[source]` |
 | `deploy/crontab.example` | Cron template (`CRON_TZ=America/Chicago`) |
 
-Default `JOBS` (Amazon; DE/JP omitted; NL = vendor 61 only):
+Default `JOBS` (order: UK DE CA MX PL NL FR JP IN IT BR; no AE/US; UK=46 DE/EM-EU=51 MX=50 NL=61):
 
 | Vendor key | Source | vendor_id | sl | sc |
 |------------|--------|-----------|----|----|
+| `em-uk` | `amz_uk` | 46 | 41 | 46873 |
+| `em-eu` | `amz_de` | 51 | 59 | 46898 |
 | `topselected` | `amz_ca` | 24 | 19 | 46901 |
-| `topselected` | `amz_us` | 24 | 19 | 46865 |
-| `topselected` | `amz_uk` | 24 | 41 | 46873 |
-| `dubai-essence` | `amz_ae` | 49 | 57 | 46896 |
 | `em-mx` | `amz_mx` | 50 | 58 | 46897 |
-| `em-fr` | `amz_fr` | 57 | 65 | 46905 |
-| `em-in` | `amz_in` | 52 | 60 | 46899 |
-| `everymarket-it` | `amz_it` | 44 | 52 | 46889 |
 | `em-pl` | `amz_pl` | 60 | 68 | 46908 |
 | `em-nl` | `amz_nl` | 61 | 69 | 46909 |
+| `em-fr` | `amz_fr` | 57 | 65 | 46905 |
+| `jp-cmedia` | `amz_jp` | 42 | 50 | 46887 |
+| `em-in` | `amz_in` | 52 | 60 | 46899 |
+| `everymarket-it` | `amz_it` | 44 | 52 | 46889 |
 | `em-horizon` | `amz_br` | 63 | 71 | 46911 |
 
 JSONL: `/home/Admin/em-tasks/data/amazon/amz_{mp}_to_upload.jsonl`
